@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revox Widget Demo</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f8fafc;
+        color: #111827;
+      }
+
+      main {
+        width: min(920px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 72px 0;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(32px, 5vw, 56px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      p {
+        max-width: 640px;
+        font-size: 18px;
+        line-height: 1.6;
+      }
+
+      .panel {
+        margin-top: 32px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 20px;
+      }
+
+      code {
+        color: #1d4ed8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Revox embeddable widget demo</h1>
+      <p>
+        This page loads <code>embed.js</code> with <code>data-widget-id="demo-widget"</code>.
+        When Bubble and ElevenLabs environment variables are not configured, the backend uses safe mock widget data and a mock signed URL.
+      </p>
+      <div class="panel">
+        Use the launcher in the bottom corner to test open, close, message history, loading state, and error handling.
+      </div>
+    </main>
+
+    <script src="/embed.js?v=modern-pill" data-widget-id="demo-widget"></script>
+  </body>
+</html>
