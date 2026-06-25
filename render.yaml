@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: revox-widget
+    runtime: node
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run build
+    startCommand: pnpm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: BUBBLE_WORKFLOW_URL
+        sync: false
+      - key: BUBBLE_API_TOKEN
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: GLOBAL_ALLOWED_ORIGINS
+        sync: false
