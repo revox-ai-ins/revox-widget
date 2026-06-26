@@ -49,12 +49,10 @@ export function isOriginAllowedForWidget(origin: string | undefined, widget: Bub
   const hostname = hostnameFromOrigin(origin);
   if (!hostname) return false;
 
+  if (!hasConfiguredAllowedDomains(widget)) return true;
+
   return widget.allowed_domains.some((domain) => {
-    const normalized = domain
-      .replace(/^https?:\/\//, "")
-      .replace(/\/.*$/, "")
-      .toLowerCase()
-      .trim();
+    const normalized = normalizeAllowedDomain(domain);
 
     if (!normalized) return false;
     if (normalized.startsWith("*.")) {
@@ -81,12 +79,10 @@ export function isPageHostAllowedForWidget(pageUrl: string | undefined, widget: 
   const hostname = hostnameFromPageUrl(pageUrl);
   if (!hostname) return false;
 
+  if (!hasConfiguredAllowedDomains(widget)) return true;
+
   return widget.allowed_domains.some((domain) => {
-    const normalized = domain
-      .replace(/^https?:\/\//, "")
-      .replace(/\/.*$/, "")
-      .toLowerCase()
-      .trim();
+    const normalized = normalizeAllowedDomain(domain);
 
     if (!normalized) return false;
     if (normalized.startsWith("*.")) {
@@ -96,6 +92,18 @@ export function isPageHostAllowedForWidget(pageUrl: string | undefined, widget: 
 
     return hostname === normalized;
   });
+}
+
+function hasConfiguredAllowedDomains(widget: BubbleWidgetRecord): boolean {
+  return widget.allowed_domains.some((domain) => Boolean(normalizeAllowedDomain(domain)));
+}
+
+function normalizeAllowedDomain(domain: string): string {
+  return domain
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .toLowerCase()
+    .trim();
 }
 
 export function toPublicWidgetConfig(widget: BubbleWidgetRecord) {
