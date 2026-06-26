@@ -4,6 +4,7 @@
   var currentScript;
   var widgetId;
   var apiBase;
+  var IDLE_TIMEOUT_MS = 40000;
 
   var state = {
     config: null,
@@ -19,6 +20,7 @@
     lastCloseReason: "",
     messages: [],
     typewriterTimer: null,
+    idleTimer: null,
     error: ""
   };
 
@@ -759,6 +761,8 @@
   }
 
   function endConversation() {
+    clearIdleTimer();
+
     if (state.socket) {
       state.socket.onclose = null;
       state.socket.close(1000, "Visitor ended conversation");
@@ -821,6 +825,7 @@
       state.error = "";
       state.connectionState = "connected";
       state.isLoading = false;
+      resetIdleTimer();
       safeSocketSend({
         type: "conversation_initiation_client_data",
         conversation_config_override: {},
@@ -839,6 +844,7 @@
       state.lastCloseCode = String(event.code || "");
       state.lastCloseReason = event.reason || "";
       if (state.isStarted) {
+        clearIdleTimer();
         state.error = "Chat disconnected. Start a new chat if you need more help.";
         state.isStarted = false;
         state.isLoading = false;
@@ -850,6 +856,7 @@
     });
 
     state.socket.addEventListener("error", function () {
+      clearIdleTimer();
       state.error = "Realtime chat connection failed.";
       state.connectionState = "error";
       state.isLoading = false;
@@ -886,6 +893,7 @@
       payload.message;
 
     if (!text || typeof text !== "string") return;
+    resetIdleTimer();
 
     var lastMessage = state.messages[state.messages.length - 1];
     if (lastMessage && lastMessage.role === "agent" && lastMessage.text === text) {
@@ -912,6 +920,7 @@
   function handleAgentTextPart(part) {
     if (!part) return;
     if (typeof part === "string") {
+      resetIdleTimer();
       appendAgentDelta(part);
       return;
     }
@@ -919,6 +928,7 @@
     var partText = typeof part.text === "string" ? part.text : "";
 
     if (part.type === "start") {
+      if (partText) resetIdleTimer();
       ensureActiveAgentMessage("");
       queueAgentText(partText, false);
       state.isLoading = true;
@@ -927,6 +937,7 @@
     }
 
     if (part.type === "delta") {
+      if (partText) resetIdleTimer();
       queueAgentText(partText, false);
       state.isLoading = true;
       render();
@@ -1012,6 +1023,44 @@
     state.typewriterTimer = null;
   }
 
+  function resetIdleTimer() {
+    clearIdleTimer();
+    if (!state.isStarted) return;
+
+    state.idleTimer = window.setTimeout(function () {
+      terminateIdleConversation();
+    }, IDLE_TIMEOUT_MS);
+  }
+
+  function clearIdleTimer() {
+    if (!state.idleTimer) return;
+    window.clearTimeout(state.idleTimer);
+    state.idleTimer = null;
+  }
+
+  function terminateIdleConversation() {
+    if (!state.isStarted) return;
+
+    if (state.socket) {
+      state.socket.onclose = null;
+      state.socket.close(1000, "Conversation ended after inactivity");
+      state.socket = null;
+    }
+
+    clearIdleTimer();
+    stopTypewriter();
+    var activeMessage = getActiveAgentMessage();
+    if (activeMessage) activeMessage.streaming = false;
+
+    state.isStarted = false;
+    state.isLoading = false;
+    state.connectionState = "idle";
+    state.activeAgentMessageId = null;
+    state.error = "Conversation ended after 40 seconds of inactivity.";
+    track("chat_ended", { reason: "idle_timeout", timeoutMs: IDLE_TIMEOUT_MS });
+    render();
+  }
+
   function getActiveAgentMessage() {
     if (!state.activeAgentMessageId) return null;
     return state.messages.find(function (message) {
@@ -1030,6 +1079,7 @@
     state.isLoading = true;
     state.error = "";
     if (input) input.value = "";
+    resetIdleTimer();
 
     safeSocketSend({
       type: "user_message",
