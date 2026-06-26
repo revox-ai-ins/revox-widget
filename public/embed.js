@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var currentScript = document.currentScript;
+  var currentScript = document.currentScript || findEmbedScript();
   if (!currentScript) return;
 
   var widgetId = currentScript.getAttribute("data-widget-id");
@@ -35,6 +35,18 @@
   var root;
 
   whenBodyReady(boot);
+
+  function findEmbedScript() {
+    var scripts = Array.prototype.slice.call(document.querySelectorAll("script[src]"));
+    for (var index = scripts.length - 1; index >= 0; index -= 1) {
+      var script = scripts[index];
+      var src = script.getAttribute("src") || "";
+      if (script.getAttribute("data-widget-id") && /\/embed\.js(\?|$)/.test(src)) {
+        return script;
+      }
+    }
+    return null;
+  }
 
   function boot() {
     host = document.createElement("div");
