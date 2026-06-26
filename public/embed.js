@@ -1,18 +1,9 @@
 (function () {
   "use strict";
 
-  var currentScript = document.currentScript || findEmbedScript();
-  if (!currentScript) return;
-
-  var widgetId = currentScript.getAttribute("data-widget-id");
-  if (!widgetId) {
-    console.error("[Revox] Missing data-widget-id on embed script.");
-    return;
-  }
-
-  var apiBase =
-    currentScript.getAttribute("data-api-base") ||
-    new URL(currentScript.getAttribute("src") || "", window.location.href).origin;
+  var currentScript;
+  var widgetId;
+  var apiBase;
 
   var state = {
     config: null,
@@ -34,7 +25,7 @@
   var style;
   var root;
 
-  whenBodyReady(boot);
+  resolveEmbedScript(0);
 
   function findEmbedScript() {
     var scripts = Array.prototype.slice.call(document.querySelectorAll("script[src]"));
@@ -46,6 +37,29 @@
       }
     }
     return null;
+  }
+
+  function resolveEmbedScript(attempt) {
+    currentScript = document.currentScript || findEmbedScript();
+    widgetId = currentScript ? currentScript.getAttribute("data-widget-id") : "";
+
+    if (!currentScript || !widgetId) {
+      if (attempt < 20) {
+        window.setTimeout(function () {
+          resolveEmbedScript(attempt + 1);
+        }, 50);
+        return;
+      }
+
+      console.error("[Revox] Missing data-widget-id on embed script.");
+      return;
+    }
+
+    apiBase =
+      currentScript.getAttribute("data-api-base") ||
+      new URL(currentScript.getAttribute("src") || "", window.location.href).origin;
+
+    whenBodyReady(boot);
   }
 
   function boot() {
