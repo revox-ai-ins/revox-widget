@@ -30,39 +30,56 @@
     error: ""
   };
 
-  var host = document.createElement("div");
-  host.id = "revox-widget-host";
-  document.body.appendChild(host);
+  var host;
+  var style;
+  var root;
 
-  var shadow = host.attachShadow({ mode: "open" });
-  var style = document.createElement("style");
-  var root = document.createElement("div");
-  root.className = "revox-root";
-  shadow.appendChild(style);
-  shadow.appendChild(root);
-  host.addEventListener("click", function (event) {
-    if (event.defaultPrevented) return;
+  whenBodyReady(boot);
 
-    if (state.config && !state.isOpen) {
-      openWidget();
+  function boot() {
+    host = document.createElement("div");
+    host.id = "revox-widget-host";
+    document.body.appendChild(host);
+
+    var shadow = host.attachShadow({ mode: "open" });
+    style = document.createElement("style");
+    root = document.createElement("div");
+    root.className = "revox-root";
+    shadow.appendChild(style);
+    shadow.appendChild(root);
+    host.addEventListener("click", function (event) {
+      if (event.defaultPrevented) return;
+
+      if (state.config && !state.isOpen) {
+        openWidget();
+        return;
+      }
+
+      if (!state.isOpen) return;
+
+      var actionBandTop = window.innerHeight - 132;
+      if (event.clientY < actionBandTop) return;
+
+      if (!state.isStarted) {
+        startChat();
+        return;
+      }
+
+      var input = root.querySelector("input[name='message']");
+      if (input) input.focus();
+    });
+
+    loadConfig();
+  }
+
+  function whenBodyReady(callback) {
+    if (document.body) {
+      callback();
       return;
     }
 
-    if (!state.isOpen) return;
-
-    var actionBandTop = window.innerHeight - 132;
-    if (event.clientY < actionBandTop) return;
-
-    if (!state.isStarted) {
-      startChat();
-      return;
-    }
-
-    var input = root.querySelector("input[name='message']");
-    if (input) input.focus();
-  });
-
-  loadConfig();
+    document.addEventListener("DOMContentLoaded", callback, { once: true });
+  }
 
   function updateHostState() {
     host.setAttribute("data-revox-loaded", state.config ? "true" : "false");
