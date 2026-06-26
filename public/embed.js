@@ -18,6 +18,7 @@
     lastCloseCode: "",
     lastCloseReason: "",
     messages: [],
+    typewriterTimer: null,
     error: ""
   };
 
@@ -167,6 +168,8 @@
         --revox-line: rgba(15, 23, 42, 0.1);
         --revox-surface: color-mix(in srgb, var(--revox-bg) 94%, white);
         --revox-soft: color-mix(in srgb, var(--revox-primary) 9%, white);
+        --revox-secondary-soft: color-mix(in srgb, var(--revox-secondary) 10%, white);
+        --revox-agent-line: color-mix(in srgb, var(--revox-secondary) 34%, rgba(15, 23, 42, 0.08));
         position: fixed;
         ${isLeft ? "left" : "right"}: 24px;
         bottom: 24px;
@@ -188,7 +191,7 @@
         border-radius: 999px;
         background:
           radial-gradient(circle at 32% 18%, rgba(255,255,255,0.46), transparent 34%),
-          linear-gradient(145deg, var(--revox-primary), var(--revox-secondary));
+          linear-gradient(145deg, var(--revox-primary) 0%, var(--revox-primary) 42%, var(--revox-secondary) 100%);
         color: #ffffff;
         box-shadow:
           0 22px 54px rgba(15, 23, 42, 0.32),
@@ -282,13 +285,13 @@
         border-radius: 22px;
         overflow: hidden;
         background:
-          linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.22)),
+          linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.22)),
           var(--revox-bg);
         box-shadow:
           0 34px 90px rgba(15, 23, 42, 0.31),
           0 0 0 1px rgba(15, 23, 42, 0.04);
         display: grid;
-        grid-template-rows: auto 1fr auto auto;
+        grid-template-rows: auto minmax(0, 1fr) auto auto auto;
         animation: revox-rise 240ms cubic-bezier(.2,.9,.25,1);
         transform-origin: bottom ${isLeft ? "left" : "right"};
       }
@@ -298,8 +301,9 @@
         min-height: 92px;
         padding: 18px 16px 18px 18px;
         background:
+          linear-gradient(90deg, var(--revox-secondary) 0 6px, transparent 6px),
           radial-gradient(circle at 82% 0%, rgba(255,255,255,0.28), transparent 34%),
-          linear-gradient(135deg, var(--revox-secondary), var(--revox-primary));
+          linear-gradient(135deg, color-mix(in srgb, var(--revox-secondary) 88%, #020617), var(--revox-primary));
         color: #ffffff;
         display: flex;
         align-items: center;
@@ -410,6 +414,7 @@
         overflow-y: auto;
         background:
           radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--revox-primary) 11%, transparent), transparent 28%),
+          radial-gradient(circle at 90% 14%, color-mix(in srgb, var(--revox-secondary) 10%, transparent), transparent 24%),
           linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.9)),
           var(--revox-bg);
       }
@@ -438,7 +443,7 @@
       .bubble {
         max-width: 82%;
         padding: 12px 14px;
-        border-radius: 18px;
+        border-radius: 16px;
         font-size: 14px;
         line-height: 1.48;
         overflow-wrap: anywhere;
@@ -447,14 +452,16 @@
 
       .agent .bubble {
         border-bottom-left-radius: 7px;
-        background: rgba(255, 255, 255, 0.92);
+        background:
+          linear-gradient(90deg, var(--revox-secondary-soft), transparent 42%),
+          rgba(255, 255, 255, 0.94);
         color: #0f172a;
-        border: 1px solid rgba(15, 23, 42, 0.08);
+        border: 1px solid var(--revox-agent-line);
       }
 
       .visitor .bubble {
         border-bottom-right-radius: 7px;
-        background: linear-gradient(135deg, var(--revox-primary), color-mix(in srgb, var(--revox-primary) 70%, var(--revox-secondary)));
+        background: linear-gradient(135deg, var(--revox-primary) 0%, color-mix(in srgb, var(--revox-primary) 68%, var(--revox-secondary)) 58%, var(--revox-secondary) 100%);
         color: #ffffff;
       }
 
@@ -470,8 +477,8 @@
       }
 
       .status {
-        min-height: 28px;
-        padding: 0 16px 10px;
+        min-height: 26px;
+        padding: 0 16px 8px;
         background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), var(--revox-bg);
         color: var(--revox-muted);
         font-size: 12px;
@@ -495,16 +502,19 @@
       .typing span:nth-child(2) { animation-delay: 120ms; }
       .typing span:nth-child(3) { animation-delay: 240ms; }
 
-      .start {
-        padding: 14px 16px 16px;
+      .start, .controls {
         border-top: 1px solid var(--revox-line);
         background: var(--revox-surface);
+      }
+
+      .start {
+        padding: 14px 16px 16px;
       }
 
       .start button, .composer button {
         border: 0;
         border-radius: 999px;
-        background: linear-gradient(135deg, var(--revox-primary), color-mix(in srgb, var(--revox-primary) 72%, var(--revox-secondary)));
+        background: linear-gradient(135deg, var(--revox-primary), color-mix(in srgb, var(--revox-primary) 64%, var(--revox-secondary)), var(--revox-secondary));
         color: #ffffff;
         cursor: pointer;
         font-weight: 700;
@@ -523,9 +533,8 @@
       }
 
       .composer {
-        padding: 12px 14px;
-        border-top: 1px solid var(--revox-line);
-        background: var(--revox-surface);
+        padding: 8px 14px 14px;
+        background: transparent;
         display: grid;
         grid-template-columns: 1fr 46px;
         gap: 8px;
@@ -533,18 +542,31 @@
 
       .conversation-actions {
         padding: 10px 14px 0;
-        background: var(--revox-surface);
+        background: transparent;
         display: flex;
-        justify-content: flex-end;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .conversation-state {
+        min-width: 0;
+        color: color-mix(in srgb, var(--revox-text) 58%, white);
+        font-size: 12px;
+        font-weight: 650;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .end-button {
-        min-height: 30px;
+        flex: 0 0 auto;
+        min-height: 32px;
         border: 1px solid rgba(15, 23, 42, 0.12);
         border-radius: 999px;
-        padding: 0 12px;
-        background: rgba(255, 255, 255, 0.78);
-        color: color-mix(in srgb, var(--revox-text) 72%, white);
+        padding: 0 13px;
+        background: color-mix(in srgb, var(--revox-secondary) 7%, white);
+        color: color-mix(in srgb, var(--revox-secondary) 72%, var(--revox-text));
         cursor: pointer;
         font-size: 12px;
         font-weight: 700;
@@ -553,8 +575,8 @@
 
       .end-button:hover {
         background: #ffffff;
-        color: var(--revox-text);
-        border-color: color-mix(in srgb, var(--revox-primary) 32%, rgba(15, 23, 42, 0.12));
+        color: var(--revox-secondary);
+        border-color: color-mix(in srgb, var(--revox-secondary) 38%, rgba(15, 23, 42, 0.12));
       }
 
       .composer input {
@@ -743,6 +765,7 @@
       state.socket = null;
     }
 
+    stopTypewriter();
     var endedMessage = getActiveAgentMessage();
     if (endedMessage) endedMessage.streaming = false;
 
@@ -874,13 +897,15 @@
 
     var activeMessage = getActiveAgentMessage();
     if (activeMessage) {
-      activeMessage.text = text;
-      activeMessage.streaming = false;
+      activeMessage.pendingText = text.slice(activeMessage.text.length);
+      activeMessage.finishWhenTyped = true;
+      activeMessage.streaming = true;
+      startTypewriter();
     } else {
-      state.messages.push({ role: "agent", text: text, streaming: false });
+      ensureActiveAgentMessage("");
+      queueAgentText(text, true);
     }
     state.isLoading = false;
-    state.activeAgentMessageId = null;
     render();
   }
 
@@ -894,14 +919,15 @@
     var partText = typeof part.text === "string" ? part.text : "";
 
     if (part.type === "start") {
-      ensureActiveAgentMessage(partText);
+      ensureActiveAgentMessage("");
+      queueAgentText(partText, false);
       state.isLoading = true;
       render();
       return;
     }
 
     if (part.type === "delta") {
-      appendAgentDelta(partText);
+      queueAgentText(partText, false);
       state.isLoading = true;
       render();
       return;
@@ -910,8 +936,8 @@
     if (part.type === "stop") {
       state.isLoading = false;
       var stoppedMessage = getActiveAgentMessage();
-      if (stoppedMessage) stoppedMessage.streaming = false;
-      state.activeAgentMessageId = null;
+      if (stoppedMessage) stoppedMessage.finishWhenTyped = true;
+      startTypewriter();
       render();
     }
   }
@@ -919,7 +945,7 @@
   function ensureActiveAgentMessage(initialText) {
     var existing = getActiveAgentMessage();
     if (existing) {
-      if (initialText) existing.text += initialText;
+      if (initialText) existing.pendingText = (existing.pendingText || "") + initialText;
       existing.streaming = true;
       return existing;
     }
@@ -928,17 +954,62 @@
     var message = {
       id: state.activeAgentMessageId,
       role: "agent",
-      text: initialText || "",
-      streaming: true
+      text: "",
+      pendingText: initialText || "",
+      streaming: true,
+      finishWhenTyped: false
     };
     state.messages.push(message);
+    startTypewriter();
     return message;
   }
 
   function appendAgentDelta(text) {
+    queueAgentText(text, false);
+  }
+
+  function queueAgentText(text, finishWhenTyped) {
     var message = ensureActiveAgentMessage("");
-    message.text += text || "";
+    if (text) message.pendingText = (message.pendingText || "") + text;
     message.streaming = true;
+    if (finishWhenTyped) message.finishWhenTyped = true;
+    startTypewriter();
+  }
+
+  function startTypewriter() {
+    if (state.typewriterTimer) return;
+
+    state.typewriterTimer = window.setInterval(function () {
+      var message = getActiveAgentMessage();
+      if (!message) {
+        stopTypewriter();
+        return;
+      }
+
+      var pending = message.pendingText || "";
+      if (!pending) {
+        if (message.finishWhenTyped) {
+          message.streaming = false;
+          message.finishWhenTyped = false;
+          state.activeAgentMessageId = null;
+          stopTypewriter();
+          render();
+        }
+        return;
+      }
+
+      var charsToReveal = pending.length > 24 ? 3 : 1;
+      message.text += pending.slice(0, charsToReveal);
+      message.pendingText = pending.slice(charsToReveal);
+      message.streaming = true;
+      render();
+    }, 22);
+  }
+
+  function stopTypewriter() {
+    if (!state.typewriterTimer) return;
+    window.clearInterval(state.typewriterTimer);
+    state.typewriterTimer = null;
   }
 
   function getActiveAgentMessage() {
@@ -1026,10 +1097,13 @@
 
   function activeChatControlsHtml() {
     return `
-      <div class="conversation-actions">
-        <button class="end-button" type="button" data-end>End conversation</button>
+      <div class="controls">
+        <div class="conversation-actions">
+          <span class="conversation-state">${escapeHtml(connectionLabel())}</span>
+          <button class="end-button" type="button" data-end>End conversation</button>
+        </div>
+        ${composerHtml()}
       </div>
-      ${composerHtml()}
     `;
   }
 
