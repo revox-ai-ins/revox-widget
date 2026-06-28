@@ -275,7 +275,7 @@
     return state.sdkPromise;
   }
 
-  function modeSwitch() { return `<div class="mode" role="tablist"><button type="button" data-mode="text" aria-pressed="${state.mode === "text"}" ${state.started || !state.config.textEnabled ? "disabled" : ""}>Chat</button><button type="button" data-mode="voice" aria-pressed="${state.mode === "voice"}" ${state.started || !state.config.voiceEnabled ? "disabled" : ""}>Voice</button></div>`; }
+  function modeSwitch() { if (!state.config.textEnabled || !state.config.voiceEnabled) return ""; return `<div class="mode" role="tablist"><button type="button" data-mode="text" aria-pressed="${state.mode === "text"}" ${state.started ? "disabled" : ""}>Chat</button><button type="button" data-mode="voice" aria-pressed="${state.mode === "voice"}" ${state.started ? "disabled" : ""}>Voice</button></div>`; }
   function messagesHtml() { return `<div class="messages" aria-live="polite">${state.messages.map(msgHtml).join("")}</div>`; }
   function msgHtml(m) { return `<div class="msg ${m.role === "visitor" ? "visitor" : "agent"}"><div class="bubble">${esc(m.text || "")}${m.streaming ? '<span class="cursor"></span>' : ""}</div></div>`; }
   function voiceHtml() { return `<div class="voice"><div class="orb-wrap"><div class="orb"><div class="viz">${state.bars.map(function (h) { return '<span class="bar" style="--h:' + esc(h) + '"></span>'; }).join("")}</div><div class="vpills"><span class="pill">${esc(voiceLabel())}</span><span class="pill">${state.muted ? "Muted" : "Mic on"}</span></div></div></div><div class="transcript"><strong>Live transcript</strong>${esc(state.transcript || latest() || "Start voice and speak naturally.")}</div></div>`; }
