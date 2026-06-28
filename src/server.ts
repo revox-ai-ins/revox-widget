@@ -65,6 +65,11 @@ if (config.NODE_ENV !== "production") {
   });
 }
 
+app.get("/embed.js", async (_request, reply) => {
+  const script = await readFile(path.join(publicDir, "embed.js"), "utf8");
+  return reply.type("application/javascript; charset=utf-8").send(script);
+});
+
 await app.register(fastifyStatic, {
   root: publicDir,
   prefix: "/"
