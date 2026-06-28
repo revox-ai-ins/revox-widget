@@ -146,19 +146,34 @@
   async function connect(signedUrl, mode) {
     if (state.conversation) await state.conversation.endSession().catch(noop);
     var client = await loadSdk();
-    state.conversation = await client.Conversation.startSession({
+    var sessionClient = mode === "voice" ? client.VoiceConversation : client.TextConversation;
+    if (!sessionClient || !sessionClient.startSession) throw new Error("Realtime chat client is not available.");
+    state.conversation = await sessionClient.startSession({
       signedUrl: signedUrl,
-      textOnly: mode !== "voice",
+      connectionType: "websocket",
       dynamicVariables: { welcome_message: state.config.welcomeMessage || "" },
       onConnect: function () { state.loading = false; state.started = true; state.connection = "connected"; resetIdle(); if (mode === "voice") startViz(); render(); },
-      onDisconnect: function (d) { clearIdle(); stopViz(); if (state.started) { state.started = false; state.loading = false; state.connection = d && d.reason === "user" ? "idle" : "disconnected"; state.error = d && d.reason === "user" ? "" : "Chat disconnected. Start a new chat if you need more help."; track("chat_ended", { mode: state.activeMode, reason: d ? d.reason : "disconnect" }); render(); } },
-      onError: function (m) { clearIdle(); stopViz(); state.loading = false; state.connection = "error"; state.error = m || "Realtime chat connection failed."; render(); },
+      onDisconnect: function (d) { clearIdle(); stopViz(); if (state.started) { state.started = false; state.loading = false; state.connection = d && d.reason === "user" ? "idle" : "disconnected"; state.error = d && d.reason === "user" ? "" : disconnectMessage(d); track("chat_ended", { mode: state.activeMode, reason: d ? d.reason : "disconnect" }); render(); } },
+      onError: function (m) { clearIdle(); stopViz(); state.loading = false; state.connection = "error"; state.error = cleanError(m) || "Realtime chat connection failed."; render(); },
       onStatusChange: function (p) { state.connection = p.status === "connected" ? "connected" : p.status; state.loading = p.status === "connecting"; render(); },
       onModeChange: function (p) { state.voiceMode = p.mode; render(); },
       onMessage: function (p) { handleMessage(p, mode); },
       onAgentChatResponsePart: handlePart,
       onVadScore: function (p) { state.inputVolume = Math.max(0, Math.min(1, Number(p.vadScore) || 0)); }
     });
+  }
+
+  function disconnectMessage(d) {
+    if (!d) return "Chat disconnected. Start a new chat if you need more help.";
+    if (d.message) return cleanError(d.message);
+    if (d.closeReason) return cleanError(d.closeReason);
+    if (d.context && d.context.reason) return cleanError(d.context.reason);
+    if (d.reason === "agent") return "The agent ended the conversation.";
+    return "Chat disconnected. Start a new chat if you need more help.";
+  }
+
+  function cleanError(message) {
+    return message ? String(message).replace(/^Error:\s*/i, "").trim() : "";
   }
 
   function handleMessage(p, mode) {
