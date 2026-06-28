@@ -12,7 +12,8 @@ const widgetIdParamSchema = z.object({
 
 const widgetSessionSchema = z.object({
   widgetId: z.string().trim().min(3).max(120).regex(/^[a-zA-Z0-9_-]+$/),
-  pageUrl: z.string().url().max(2048)
+  pageUrl: z.string().url().max(2048),
+  mode: z.enum(["text", "voice"]).optional().default("text")
 });
 
 const analyticsSchema = z.object({
@@ -30,8 +31,9 @@ export async function registerPublicRoutes(
   app.get("/public/widget-config/:widgetId", async (request, reply) => {
     const { widgetId } = widgetIdParamSchema.parse(request.params);
     const widget = await bubble.getWidgetByPublicId(widgetId);
+    const origin = originFromRequest(request);
 
-    if (!widget || !widget.is_widget_active || !widget.text_enabled) {
+    if (!widget || !widget.is_widget_active || (!widget.text_enabled && !widget.voice_enabled)) {
       return reply.code(404).send({ error: "Widget not found" });
     }
 
@@ -43,8 +45,12 @@ export async function registerPublicRoutes(
     const widget = await bubble.getWidgetByPublicId(body.widgetId);
     const origin = originFromRequest(request);
 
-    if (!widget || !widget.is_widget_active || !widget.text_enabled) {
+    if (!widget || !widget.is_widget_active) {
       return reply.code(404).send({ error: "Widget not found" });
+    }
+
+    if ((body.mode === "text" && !widget.text_enabled) || (body.mode === "voice" && !widget.voice_enabled)) {
+      return reply.code(403).send({ error: "Requested conversation mode is not enabled" });
     }
 
     if (!isPageHostAllowedForWidget(body.pageUrl, widget)) {
@@ -69,13 +75,15 @@ export async function registerPublicRoutes(
       event: "chat_started",
       widgetId: widget.public_widget_id,
       sessionId,
-      origin
+      origin,
+      metadata: { mode: body.mode }
     });
 
     return reply.send({
       signedUrl,
       agentName: widget.widget_name,
-      welcomeMessage: widget.welcome_message
+      welcomeMessage: widget.welcome_message,
+      sessionId
     });
   });
 
