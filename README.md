@@ -9,13 +9,14 @@ First MVP for a customer-installed Revox widget:
 </script>
 ```
 
-This release is text chat only. Voice, Twilio streaming, live monitoring, transfers, and supervisor tools are intentionally out of scope.
+This release supports text chat and browser voice conversations. Twilio streaming, live monitoring, transfers, and supervisor tools are intentionally out of scope.
 
 ## What Is Included
 
 - Vanilla JavaScript `public/embed.js` widget with Shadow DOM isolation.
 - Dynamic Bubble-driven theme: logo, colors, welcome message, and widget position.
 - Text chat UI with launcher, open/close, message history, loading state, disconnect/error state, mobile layout, and Powered by Revox footer.
+- Voice mode with a Chat/Voice switcher, microphone session, live transcript rendering when ElevenLabs emits user transcription events, mute/end controls, and a branded audio visualizer that uses the widget colors.
 - TypeScript Fastify API for safe public config, signed session creation, and analytics.
 - Bubble adapter for server-to-server backend workflow calls.
 - ElevenLabs signed URL generation on the backend only.
@@ -36,7 +37,7 @@ In development, open [http://localhost:8080/demo-real.html](http://localhost:808
 
 Demo pages live in `examples/` and are not served when `NODE_ENV=production`.
 
-When `BUBBLE_WORKFLOW_URL` is blank, the API uses mock widget config for `demo-widget`. `ELEVENLABS_API_KEY` is required for real chat sessions.
+When `BUBBLE_WORKFLOW_URL` is blank, the API uses mock widget config for `demo-widget`. `ELEVENLABS_API_KEY` is required for real text or voice sessions.
 
 ## API
 
@@ -55,7 +56,7 @@ Returns only safe display fields:
   "welcome_message": "Hi, I am the Revox assistant.",
   "widget_position": "bottom-right",
   "text_enabled": true,
-  "voice_enabled": false
+  "voice_enabled": true
 }
 ```
 
@@ -68,7 +69,8 @@ Request:
 ```json
 {
   "widgetId": "PUBLIC_WIDGET_ID",
-  "pageUrl": "https://customer-site.example/pricing"
+  "pageUrl": "https://customer-site.example/pricing",
+  "mode": "voice"
 }
 ```
 
@@ -78,11 +80,12 @@ Response:
 {
   "signedUrl": "wss://...",
   "agentName": "Revox Agent",
-  "welcomeMessage": "Hi, how can I help?"
+  "welcomeMessage": "Hi, how can I help?",
+  "sessionId": "..."
 }
 ```
 
-The backend validates widget status, `text_enabled`, and `pageUrl` hostname against Bubble `allowed_domains`, then requests an ElevenLabs signed URL server-side using `ELEVENLABS_API_KEY`.
+The backend validates widget status, the requested mode against `text_enabled` / `voice_enabled`, and `pageUrl` hostname against Bubble `allowed_domains`, then requests an ElevenLabs signed URL server-side using `ELEVENLABS_API_KEY`.
 
 ### `POST /public/widget-analytics`
 
