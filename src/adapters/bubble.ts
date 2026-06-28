@@ -18,7 +18,7 @@ const mockWidgets = new Map<string, BubbleWidgetRecord>([
       is_widget_active: true,
       allowed_domains: ["localhost", "127.0.0.1"],
       text_enabled: true,
-      voice_enabled: false
+      voice_enabled: true
     }
   ]
 ]);
