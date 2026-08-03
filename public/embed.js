@@ -359,7 +359,7 @@
           0 28px 80px rgba(15, 23, 42, 0.24),
           0 0 0 1px rgba(15, 23, 42, 0.04);
         display: grid;
-        grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+        grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
         animation: revox-rise 240ms cubic-bezier(.2,.9,.25,1);
         transform-origin: bottom ${isLeft ? "left" : "right"};
       }
@@ -498,27 +498,42 @@
       }
 
       .mode-switch {
-        padding: 12px 14px;
+        height: 62px;
+        min-height: 62px;
+        max-height: 62px;
+        padding: 10px 14px;
         border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-        background: linear-gradient(rgba(255,255,255,0.94), rgba(255,255,255,0.94)), var(--revox-bg);
+        background:
+          linear-gradient(rgba(255,255,255,0.96), rgba(255,255,255,0.96)),
+          var(--revox-bg);
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 4px;
+        gap: 6px;
+        overflow: hidden;
       }
 
       .mode-switch button {
+        appearance: none;
+        width: 100%;
+        height: 40px;
+        min-width: 0;
         min-height: 40px;
-        border: 1px solid transparent;
-        border-radius: 12px;
+        max-height: 40px;
+        padding: 0 12px;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        border-radius: 14px;
         background: transparent;
         color: color-mix(in srgb, var(--revox-text) 72%, white);
         cursor: pointer;
         font-size: 13.5px;
+        line-height: 1;
         font-weight: 750;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 7px;
+        overflow: hidden;
+        white-space: nowrap;
         transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
       }
 
@@ -534,6 +549,7 @@
       .mode-switch svg {
         width: 15px;
         height: 15px;
+        flex: 0 0 auto;
       }
 
       .mode-switch button:disabled {
@@ -776,15 +792,21 @@
       }
 
       .composer {
-        padding: 8px 12px 12px;
+        padding: 0;
         background: transparent;
         display: flex;
         align-items: center;
         gap: 8px;
       }
 
+      .controls {
+        padding: 10px 12px 12px;
+        display: grid;
+        gap: 10px;
+      }
+
       .conversation-actions {
-        padding: 10px 12px 0;
+        padding: 0;
         background: transparent;
         display: flex;
         align-items: center;
@@ -817,14 +839,14 @@
 
       .end-button {
         flex: 0 0 auto;
-        min-height: 30px;
+        min-height: 34px;
         border: 1px solid rgba(15, 23, 42, 0.12);
         border-radius: 999px;
-        padding: 0 11px;
+        padding: 0 13px;
         background: #ffffff;
         color: color-mix(in srgb, var(--revox-secondary) 72%, var(--revox-text));
         cursor: pointer;
-        font-size: 11.5px;
+        font-size: 12px;
         font-weight: 700;
         transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
       }
@@ -1191,12 +1213,22 @@
     if (state.conversation) await state.conversation.endSession().catch(function () {});
 
     var client = await loadElevenLabsClient();
-    var sessionClient = mode === "voice" ? client.VoiceConversation : client.TextConversation;
-    if (!sessionClient || !sessionClient.startSession) {
+    if (!client.Conversation || !client.Conversation.startSession) {
       throw new Error("Realtime chat client is not available.");
     }
 
-    state.conversation = await sessionClient.startSession({
+    if (mode === "voice") {
+      if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Voice needs HTTPS and microphone access. Some HTML testers block this.");
+      }
+
+      var permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      permissionStream.getTracks().forEach(function (track) {
+        track.stop();
+      });
+    }
+
+    state.conversation = await client.Conversation.startSession({
       signedUrl: signedUrl,
       connectionType: "websocket",
       dynamicVariables: {
