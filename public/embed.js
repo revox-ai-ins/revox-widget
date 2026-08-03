@@ -1055,6 +1055,31 @@
       return;
     }
 
+    var activeMessage = getActiveAgentMessage();
+    if (activeMessage && activeMessage.id) {
+      var activeBubble = root.querySelector('[data-message-id="' + escapeAttribute(activeMessage.id) + '"] .bubble');
+      if (activeBubble) {
+        var textNode = activeBubble.querySelector(".bubble-text");
+        if (textNode) textNode.textContent = activeMessage.text || "";
+
+        var cursor = activeBubble.querySelector(".stream-cursor");
+        if (activeMessage.streaming && !cursor) {
+          var newCursor = document.createElement("span");
+          newCursor.className = "stream-cursor";
+          newCursor.setAttribute("aria-hidden", "true");
+          activeBubble.appendChild(newCursor);
+        }
+        if (!activeMessage.streaming && cursor) cursor.remove();
+
+        var activeMessages = conversationBody.querySelector(".messages");
+        if (activeMessages) activeMessages.scrollTop = activeMessages.scrollHeight;
+
+        var activeStatus = root.querySelector(".status");
+        if (activeStatus) activeStatus.innerHTML = statusText();
+        return;
+      }
+    }
+
     conversationBody.innerHTML = messagesHtml();
     var messages = conversationBody.querySelector(".messages");
     if (messages) messages.scrollTop = messages.scrollHeight;
@@ -1263,7 +1288,7 @@
       ensureActiveAgentMessage("");
       queueAgentText(partText, false);
       state.isLoading = true;
-      render();
+      renderMessagesOnly();
       return;
     }
 
@@ -1271,7 +1296,7 @@
       if (partText) resetIdleTimer();
       queueAgentText(partText, false);
       state.isLoading = true;
-      render();
+      renderMessagesOnly();
       return;
     }
 
@@ -1280,7 +1305,7 @@
       var stoppedMessage = getActiveAgentMessage();
       if (stoppedMessage) stoppedMessage.finishWhenTyped = true;
       startTypewriter();
-      render();
+      renderMessagesOnly();
     }
   }
 
@@ -1313,7 +1338,7 @@
       }
     }
     state.isLoading = false;
-    render();
+    renderMessagesOnly();
   }
 
   function appendTranscriptMessage(role, text, eventId) {
@@ -1566,11 +1591,11 @@
 
   function messageHtml(message) {
     var body = message.text ? escapeHtml(message.text) : "";
-    if (message.streaming) body += '<span class="stream-cursor" aria-hidden="true"></span>';
+    var messageId = message.id ? ' data-message-id="' + escapeAttribute(message.id) + '"' : "";
 
     return `
-      <div class="message ${message.role === "visitor" ? "visitor" : "agent"}">
-        <div class="bubble">${body}</div>
+      <div class="message ${message.role === "visitor" ? "visitor" : "agent"}"${messageId}>
+        <div class="bubble"><span class="bubble-text">${body}</span>${message.streaming ? '<span class="stream-cursor" aria-hidden="true"></span>' : ""}</div>
       </div>
     `;
   }
