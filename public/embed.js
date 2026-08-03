@@ -1246,11 +1246,6 @@
       signedUrl: signedUrl,
       connectionType: "websocket",
       textOnly: !isVoiceSession,
-      overrides: {
-        conversation: {
-          textOnly: !isVoiceSession
-        }
-      },
       dynamicVariables: {
         welcome_message: state.sessionWelcomeMessage || state.config.welcomeMessage || ""
       },
