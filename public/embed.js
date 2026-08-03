@@ -1226,7 +1226,8 @@
     if (state.conversation) await state.conversation.endSession().catch(function () {});
 
     var client = await loadElevenLabsClient();
-    if (!client.Conversation || !client.Conversation.startSession) {
+    var sessionClient = sessionMode === "voice" ? client.Conversation : client.TextConversation;
+    if (!sessionClient || !sessionClient.startSession) {
       throw new Error("Realtime chat client is not available.");
     }
 
@@ -1304,7 +1305,7 @@
       }
     };
 
-    state.conversation = await client.Conversation.startSession(sessionOptions);
+    state.conversation = await sessionClient.startSession(sessionOptions);
   }
 
   function disconnectMessage(details) {
