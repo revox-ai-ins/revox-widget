@@ -1215,7 +1215,7 @@
   }
 
   function shouldUseMicrophone(mode) {
-    return mode === "voice" || (mode === "text" && state.config && state.config.voiceEnabled);
+    return mode === "voice";
   }
 
   async function connectToElevenLabs(signedUrl, mode, sessionMode) {
