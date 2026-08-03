@@ -1043,6 +1043,41 @@
     if (messages) messages.scrollTop = messages.scrollHeight;
   }
 
+  function renderMessagesOnly() {
+    if (!state.config || state.mode !== "text") {
+      render();
+      return;
+    }
+
+    var conversationBody = root.querySelector(".conversation-body");
+    if (!conversationBody) {
+      render();
+      return;
+    }
+
+    conversationBody.innerHTML = messagesHtml();
+    var messages = conversationBody.querySelector(".messages");
+    if (messages) messages.scrollTop = messages.scrollHeight;
+
+    var status = root.querySelector(".status");
+    if (status) status.innerHTML = statusText();
+  }
+
+  function renderVoiceVisualizerOnly() {
+    var bars = root.querySelectorAll(".voice-bar");
+    if (!bars.length) return;
+
+    Array.prototype.forEach.call(bars, function (bar, index) {
+      bar.style.setProperty("--bar-height", String(state.visualizerBars[index] || 10));
+    });
+
+    var transcript = root.querySelector(".voice-transcript");
+    if (transcript) {
+      transcript.innerHTML = "<strong>Live transcript</strong>" +
+        escapeHtml(state.transcriptPreview || latestTranscriptText() || "Start voice and speak naturally.");
+    }
+  }
+
   function openWidget() {
     state.isOpen = true;
     state.error = "";
@@ -1360,7 +1395,7 @@
     state.visualizerBars = bars;
     state.inputVolume = inputVolume || state.inputVolume || 0;
     state.outputVolume = outputVolume || state.outputVolume || 0;
-    render();
+    renderVoiceVisualizerOnly();
   }
 
   function ensureActiveAgentMessage(initialText) {
@@ -1423,7 +1458,7 @@
       message.text += pending.slice(0, charsToReveal);
       message.pendingText = pending.slice(charsToReveal);
       message.streaming = true;
-      render();
+      renderMessagesOnly();
     }, 22);
   }
 
