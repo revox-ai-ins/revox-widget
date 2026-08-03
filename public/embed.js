@@ -1183,6 +1183,10 @@
     setLoading(true, "");
     try {
       var sessionMode = shouldUseMicrophone(mode) ? "voice" : mode;
+      state.isMicActive = false;
+      state.voiceState = "idle";
+      state.voiceMode = "listening";
+      state.isMuted = false;
       var response = await fetch(apiBase + "/public/widget-session", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -1237,9 +1241,16 @@
       });
     }
 
-    state.conversation = await client.Conversation.startSession({
+    var isVoiceSession = sessionMode === "voice";
+    var sessionOptions = {
       signedUrl: signedUrl,
       connectionType: "websocket",
+      textOnly: !isVoiceSession,
+      overrides: {
+        conversation: {
+          textOnly: !isVoiceSession
+        }
+      },
       dynamicVariables: {
         welcome_message: state.sessionWelcomeMessage || state.config.welcomeMessage || ""
       },
@@ -1298,7 +1309,9 @@
       onVadScore: function (props) {
         state.inputVolume = Math.max(0, Math.min(1, Number(props.vadScore) || 0));
       }
-    });
+    };
+
+    state.conversation = await client.Conversation.startSession(sessionOptions);
   }
 
   function disconnectMessage(details) {
