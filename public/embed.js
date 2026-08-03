@@ -1241,11 +1241,9 @@
       });
     }
 
-    var isVoiceSession = sessionMode === "voice";
     var sessionOptions = {
       signedUrl: signedUrl,
       connectionType: "websocket",
-      textOnly: !isVoiceSession,
       dynamicVariables: {
         welcome_message: state.sessionWelcomeMessage || state.config.welcomeMessage || ""
       },
