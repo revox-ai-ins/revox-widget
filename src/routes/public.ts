@@ -49,7 +49,7 @@ export async function registerPublicRoutes(
       return reply.code(404).send({ error: "Widget not found" });
     }
 
-    if ((body.mode === "text" && !widget.text_enabled) || (body.mode === "voice" && !widget.voice_enabled)) {
+    if (body.mode === "text" && !widget.text_enabled) {
       return reply.code(403).send({ error: "Requested conversation mode is not enabled" });
     }
 

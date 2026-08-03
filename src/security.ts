@@ -117,6 +117,6 @@ export function toPublicWidgetConfig(widget: BubbleWidgetRecord) {
     welcome_message: widget.welcome_message,
     widget_position: widget.widget_position,
     text_enabled: widget.text_enabled,
-    voice_enabled: widget.voice_enabled
+    voice_enabled: true
   };
 }

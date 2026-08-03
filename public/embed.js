@@ -1119,7 +1119,6 @@
     if (mode !== "text" && mode !== "voice") return;
     if (state.isStarted || state.isLoading) return;
     if (mode === "text" && !state.config.textEnabled) return;
-    if (mode === "voice" && !state.config.voiceEnabled) return;
 
     state.mode = mode;
     state.error = "";
@@ -1155,7 +1154,6 @@
 
   async function startConversation(mode) {
     if (state.isLoading || state.isStarted) return;
-    if (mode === "voice" && !state.config.voiceEnabled) return;
     if (mode === "text" && !state.config.textEnabled) return;
 
     setLoading(true, "");
