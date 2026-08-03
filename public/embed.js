@@ -20,6 +20,7 @@
     connectionState: "idle",
     voiceState: "idle",
     voiceMode: "listening",
+    isMicActive: false,
     isMuted: false,
     visualizerTimer: null,
     visualizerBars: [8, 18, 36, 22, 14, 30, 12, 24, 16, 28, 10, 20],
@@ -1166,6 +1167,7 @@
     state.connectionState = "idle";
     state.voiceState = "idle";
     state.voiceMode = "listening";
+    state.isMicActive = false;
     state.isMuted = false;
     state.transcriptPreview = "";
     state.activeAgentMessageId = null;
@@ -1180,11 +1182,12 @@
 
     setLoading(true, "");
     try {
+      var sessionMode = shouldUseMicrophone(mode) ? "voice" : mode;
       var response = await fetch(apiBase + "/public/widget-session", {
         method: "POST",
         headers: { "content-type": "application/json" },
         credentials: "omit",
-        body: JSON.stringify({ widgetId: widgetId, pageUrl: window.location.href, mode: mode })
+        body: JSON.stringify({ widgetId: widgetId, pageUrl: window.location.href, mode: sessionMode })
       });
 
       if (!response.ok) throw new Error("Could not start this chat. Please try again.");
@@ -1198,18 +1201,24 @@
       state.isStarted = true;
       state.conversationMode = mode;
       state.connectionState = "connecting";
-      state.voiceState = mode === "voice" ? "connecting" : "idle";
+      state.isMicActive = sessionMode === "voice";
+      state.voiceState = sessionMode === "voice" ? "connecting" : "idle";
       render();
-      await connectToElevenLabs(session.signedUrl, mode);
+      await connectToElevenLabs(session.signedUrl, mode, sessionMode);
     } catch (error) {
       state.isStarted = false;
+      state.isMicActive = false;
       state.connectionState = "idle";
       state.voiceState = "idle";
       setLoading(false, error.message || "Could not start this chat. Please try again.");
     }
   }
 
-  async function connectToElevenLabs(signedUrl, mode) {
+  function shouldUseMicrophone(mode) {
+    return mode === "voice" || (mode === "text" && state.config && state.config.voiceEnabled);
+  }
+
+  async function connectToElevenLabs(signedUrl, mode, sessionMode) {
     if (state.conversation) await state.conversation.endSession().catch(function () {});
 
     var client = await loadElevenLabsClient();
@@ -1217,7 +1226,7 @@
       throw new Error("Realtime chat client is not available.");
     }
 
-    if (mode === "voice") {
+    if (sessionMode === "voice") {
       if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Voice needs HTTPS and microphone access. Some HTML testers block this.");
       }
@@ -1237,11 +1246,12 @@
       onConnect: function () {
         state.error = "";
         state.connectionState = "connected";
-        state.voiceState = mode === "voice" ? "listening" : "idle";
+        state.isMicActive = sessionMode === "voice";
+        state.voiceState = sessionMode === "voice" ? "listening" : "idle";
         state.isLoading = false;
         state.isStarted = true;
         resetIdleTimer();
-        if (mode === "voice") startVisualizer();
+        if (sessionMode === "voice") startVisualizer();
         render();
       },
       onDisconnect: function (details) {
@@ -1253,6 +1263,7 @@
           state.isLoading = false;
           state.connectionState = details && details.reason === "user" ? "idle" : "disconnected";
           state.voiceState = "idle";
+          state.isMicActive = false;
           state.activeAgentMessageId = null;
           track("chat_ended", { mode: state.conversationMode, reason: details ? details.reason : "disconnect" });
           render();
@@ -1264,6 +1275,7 @@
         state.error = normalizeErrorMessage(message) || "Realtime chat connection failed.";
         state.connectionState = "error";
         state.voiceState = "idle";
+        state.isMicActive = false;
         state.isLoading = false;
         render();
       },
@@ -1414,7 +1426,7 @@
   }
 
   function toggleMute() {
-    if (!state.conversation || state.conversationMode !== "voice") return;
+    if (!state.conversation || !state.isMicActive) return;
     state.isMuted = !state.isMuted;
     state.conversation.setMicMuted(state.isMuted);
     render();
@@ -1690,10 +1702,10 @@
       <div class="controls">
         <div class="conversation-actions">
           <span class="conversation-state">${escapeHtml(connectionLabel())}</span>
-          ${state.conversationMode === "voice" ? '<button class="mute-button" type="button" data-mute aria-label="Mute microphone">' + micIcon() + '</button>' : ""}
+          ${state.isMicActive ? '<button class="mute-button" type="button" data-mute aria-label="Mute microphone">' + micIcon() + '</button>' : ""}
           <button class="end-button" type="button" data-end>End conversation</button>
         </div>
-        ${state.conversationMode === "voice" ? "" : composerHtml()}
+        ${state.mode === "voice" ? "" : composerHtml()}
       </div>
     `;
   }
