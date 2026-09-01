@@ -83,7 +83,11 @@ export async function registerPublicRoutes(
       signedUrl,
       agentName: widget.widget_name,
       welcomeMessage: widget.welcome_message,
-      sessionId
+      sessionId,
+      dynamicVariables: {
+        office_is_open: widget.office_is_open || "unknown",
+        welcome_message: widget.welcome_message || ""
+      }
     });
   });
 
