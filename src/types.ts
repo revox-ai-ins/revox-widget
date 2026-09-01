@@ -15,6 +15,7 @@ export type BubbleWidgetRecord = {
   allowed_domains: string[];
   text_enabled: boolean;
   voice_enabled: boolean;
+  office_is_open?: string;
 };
 
 export type PublicWidgetConfig = {
