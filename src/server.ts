@@ -55,7 +55,7 @@ await app.register(rateLimit, {
 });
 
 if (config.NODE_ENV !== "production") {
-  const demoPages = new Set(["demo.html", "demo-a123.html", "demo-real.html"]);
+  const demoPages = new Set(["demo.html", "demo-a123.html", "demo-real.html", "preview-launcher.html"]);
   app.get("/:demoPage", async (request, reply) => {
     const { demoPage } = request.params as { demoPage: string };
     if (!demoPages.has(demoPage)) return reply.callNotFound();
