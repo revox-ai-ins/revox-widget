@@ -18,7 +18,8 @@ const mockWidgets = new Map<string, BubbleWidgetRecord>([
       is_widget_active: true,
       allowed_domains: ["localhost", "127.0.0.1"],
       text_enabled: true,
-      voice_enabled: true
+      voice_enabled: true,
+      office_is_open: "unknown"
     }
   ]
 ]);
@@ -97,6 +98,12 @@ function normalizeBubbleRecord(record: Partial<BubbleWidgetRecord>, fallbackWidg
     is_widget_active: record.is_widget_active !== false,
     allowed_domains: Array.isArray(record.allowed_domains) ? record.allowed_domains : [],
     text_enabled: record.text_enabled !== false,
-    voice_enabled: Boolean(record.voice_enabled)
+    voice_enabled: Boolean(record.voice_enabled),
+    office_is_open: normalizeSafeString(record.office_is_open) || "unknown"
   };
+}
+
+function normalizeSafeString(value: unknown): string {
+  if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") return "";
+  return String(value).trim();
 }
